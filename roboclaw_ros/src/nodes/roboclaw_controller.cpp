@@ -16,9 +16,7 @@ class RoboClawControllerNode : public rclcpp::Node
 {
 private:
 
-  using pub_motor_velocity_map_t =
-    std::unordered_map<std::string, rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr>; // TODO change
-  using pub_motor_position_map_t =
+  using pub_motor_feedback_map_t =
     std::unordered_map<std::string, rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr>; // TODO change
   using sub_motor_velocity_map_t =
     std::unordered_map<std::string, rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr>; // TODO change
@@ -29,8 +27,7 @@ private:
 
   std::string device_;
 
-  std::unordered_map<std::string, pub_motor_velocity_map_t> pub_velocity_;
-  std::unordered_map<std::string, pub_motor_position_map_t> pub_position_;
+  std::unordered_map<std::string, pub_motor_feedback_map_t> pub_feedback_;
   std::unordered_map<std::string, sub_motor_velocity_map_t> sub_velocity_;
 
 public:
@@ -56,8 +53,6 @@ public:
 
     RCLCPP_INFO_STREAM(get_logger(), controller_map_);
 
-    RCLCPP_INFO_STREAM(get_logger(), get_fully_qualified_name() << " node started");
-
     // TOPICS --------------------------------------------------------------------------------
     for (const auto& controller : controller_map_)
     {
@@ -66,8 +61,7 @@ public:
 
       // create maps for this controller
       sub_velocity_[controller_name] = {};
-      pub_velocity_[controller_name] = {};
-      pub_position_[controller_name] = {};
+      pub_feedback_[controller_name] = {};
 
       for (const auto& motor : controller_info.motors)
       {
@@ -88,15 +82,13 @@ public:
 
         // Create publishers for velocity and position feedback
         // TODO publish to these in a timer loop
-        pub_velocity_[controller_name][motor_name] = create_publisher<std_msgs::msg::Empty>(
-          topic_namespace + "velocity_feedback",
-          rclcpp::QoS{10}
-        );
-        pub_position_[controller_name][motor_name] = create_publisher<std_msgs::msg::Empty>(
-          topic_namespace + "position_feedback",
+        pub_feedback_[controller_name][motor_name] = create_publisher<std_msgs::msg::Empty>(
+          topic_namespace + "feedback",
           rclcpp::QoS{10}
         );
       }
+
+      RCLCPP_INFO_STREAM(get_logger(), get_fully_qualified_name() << " node started");
     }
 
   }

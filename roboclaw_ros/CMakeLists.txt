@@ -26,6 +26,11 @@ ament_target_dependencies(roboclaw_utils
   rclcpp
 )
 
+# add custom messages
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/MotorFeedback.msg"
+ )
+
 # roboclaw_controller node
 add_executable(roboclaw_controller src/nodes/roboclaw_controller.cpp)
 target_link_libraries(roboclaw_controller

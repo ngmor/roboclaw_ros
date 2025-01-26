@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED) # TODO remove
 find_package(roboclaw-cpp REQUIRED)
+find_package(roboclaw_interfaces REQUIRED)
 
 # Build
 
@@ -26,11 +27,6 @@ ament_target_dependencies(roboclaw_utils
   rclcpp
 )
 
-# add custom messages
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/MotorFeedback.msg"
- )
-
 # roboclaw_controller node
 add_executable(roboclaw_controller src/nodes/roboclaw_controller.cpp)
 target_link_libraries(roboclaw_controller
@@ -39,6 +35,7 @@ target_link_libraries(roboclaw_controller
 ament_target_dependencies(roboclaw_controller
   rclcpp
   std_msgs # TODO remove
+  roboclaw_interfaces
 )
 
 # Install

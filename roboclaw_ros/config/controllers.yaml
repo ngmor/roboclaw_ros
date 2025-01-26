@@ -1,6 +1,7 @@
 /**:
   ros__parameters:
     device: /dev/ttyACM0
+    baudrate: 115200
     controllers:
       drive:
         address: 0x80

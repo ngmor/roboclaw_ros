@@ -24,26 +24,36 @@ class RoboClawControllerNode : public rclcpp::Node
 {
 private:
 
-  using pub_motor_feedback_map_t =
-    std::unordered_map<std::string, rclcpp::Publisher<roboclaw_interfaces::msg::MotorFeedback>::SharedPtr>;
-  using sub_motor_velocity_map_t =
-    std::unordered_map<std::string, rclcpp::Subscription<roboclaw_interfaces::msg::VelocitySetpoint>::SharedPtr>;
+  /// @brief Motor-related data used/modified by the node
+  struct MotorData
+  {
+
+    /// @brief Publisher for the motor's feedback data
+    rclcpp::Publisher<roboclaw_interfaces::msg::MotorFeedback>::SharedPtr pub_feedback = nullptr;
+
+    /// @brief Subscriber for motor's velocity setpoint
+    rclcpp::Subscription<roboclaw_interfaces::msg::VelocitySetpoint>::SharedPtr sub_velocity = nullptr;
+
+    // TODO add last message received time and other necessary data
+
+  };
 
   // TODO make service to open driver
   // TODO make service to close driver
 
   // CLASS MEMBERS --------------------------------------------------------------------------------
   rclcpp::TimerBase::SharedPtr timer_pub_feedback_;
+
+  /// @brief Controller info map
   const ControllerMap controller_map_ {*this};
+  
+  /// @brief Map of controllers -> motors -> motor data
+  std::unordered_map<std::string, std::unordered_map<std::string, MotorData>> motor_data_;
 
   std::string device_ = "";
   RoboClaw driver_;
   int baudrate_ = 0;
   double velocity_deadband_ = 0.0;
-
-  std::unordered_map<std::string, pub_motor_feedback_map_t> pub_feedback_;
-  std::unordered_map<std::string, sub_motor_velocity_map_t> sub_velocity_;
-
 
 public:
 
@@ -88,19 +98,22 @@ public:
       const auto& controller_name = controller.first;
       const auto& controller_info = controller.second;
 
-      // create maps for this controller
-      sub_velocity_[controller_name] = {};
-      pub_feedback_[controller_name] = {};
+      // create motor data map for this controller
+      motor_data_[controller_name] = {};
 
       for (const auto& motor : controller_info.motors)
       {
         const auto& motor_name = motor.first;
 
+        // Create motor data map for this motor
+        motor_data_[controller_name][motor_name] = {};
+        auto& this_motor_data = motor_data_[controller_name][motor_name];
+
         const auto topic_namespace = controller_name + "/" + motor_name + "/";
 
         // Create a velocity setpoint callback using a lambda function which calls
         // a class method (passing in the name of the controller/motor as well)
-        sub_velocity_[controller_name][motor_name] = create_subscription<roboclaw_interfaces::msg::VelocitySetpoint>(
+        this_motor_data.sub_velocity = create_subscription<roboclaw_interfaces::msg::VelocitySetpoint>(
           topic_namespace + "velocity_setpoint",
           rclcpp::QoS{10},
           [this, controller_name, motor_name](const roboclaw_interfaces::msg::VelocitySetpoint& msg)
@@ -110,7 +123,7 @@ public:
         );
 
         // Create publishers for velocity and position feedback
-        pub_feedback_[controller_name][motor_name] = create_publisher<roboclaw_interfaces::msg::MotorFeedback>(
+        this_motor_data.pub_feedback = create_publisher<roboclaw_interfaces::msg::MotorFeedback>(
           topic_namespace + "feedback",
           rclcpp::QoS{10}
         );
@@ -234,7 +247,7 @@ private:
         motor_feedback.position = position[to_index(motor.second)]; 
 
         // publish motor feedback with the current position and velocity
-        pub_feedback_[controller_name][motor_name]->publish(motor_feedback);
+        motor_data_[controller_name][motor_name].pub_feedback->publish(motor_feedback);
       }
     }
   }

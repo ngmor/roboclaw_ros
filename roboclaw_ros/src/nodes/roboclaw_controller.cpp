@@ -25,9 +25,9 @@ class RoboClawControllerNode : public rclcpp::Node
 private:
 
   using pub_motor_feedback_map_t =
-    std::unordered_map<std::string, rclcpp::Publisher<roboclaw_interfaces::msg::MotorFeedback>::SharedPtr>; // TODO change
+    std::unordered_map<std::string, rclcpp::Publisher<roboclaw_interfaces::msg::MotorFeedback>::SharedPtr>;
   using sub_motor_velocity_map_t =
-    std::unordered_map<std::string, rclcpp::Subscription<roboclaw_interfaces::msg::VelocitySetpoint>::SharedPtr>; // TODO change
+    std::unordered_map<std::string, rclcpp::Subscription<roboclaw_interfaces::msg::VelocitySetpoint>::SharedPtr>;
 
   // TODO make service to open driver
   // TODO make service to close driver
@@ -42,6 +42,7 @@ private:
 
   std::unordered_map<std::string, pub_motor_feedback_map_t> pub_feedback_;
   std::unordered_map<std::string, sub_motor_velocity_map_t> sub_velocity_;
+
 
 public:
 
@@ -130,7 +131,32 @@ public:
     }
   }
 
+  ~RoboClawControllerNode()
+  {
+    stop_all_motors();
+  }
+
 private:
+
+  ReturnCode stop_motor(const roboclaw::ControllerConfig& cfg, roboclaw::MotorSelect motor)
+  {
+    return driver_.set_duty(cfg, motor, 0.0);
+  }
+
+  void stop_all_motors()
+  {
+    // go through all controllers
+    for (const auto& controller : controller_map_)
+    {
+      const auto& controller_info = controller.second;
+      for (const auto& motor : controller_info.motors)
+      {
+        // stop each motor
+        const auto motor_channel = motor.second;
+        stop_motor(*controller_info.config, motor_channel);
+      }
+    }
+  }
 
   void sub_velocity_callback(
     const roboclaw_interfaces::msg::VelocitySetpoint& velocity,
@@ -164,7 +190,6 @@ private:
     {
       std::cerr << "controller not found" << std::endl;
     }
-    return;
   }
 
   void pub_feedback_timer_callback(){
@@ -199,8 +224,11 @@ private:
         pub_feedback_[controller_name][motor_name]->publish(motor_feedback);
       }
     }
-    return;
   }
+
+  // on destruction of node stop all motors (set duty cycle to 0)
+  // if we get a velocity set point that is close enough to 0 then stop the motors
+  // safe controller, make a time out so if you don't recieve on a topic fo x amount of time for that motor stop the motor
 };
 
 int main(int argc, char* argv[])

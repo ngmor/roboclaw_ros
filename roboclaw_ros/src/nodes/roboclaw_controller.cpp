@@ -5,18 +5,18 @@
 #include <stdexcept>
 
 #include <roboclaw_ros/utils/controller_map.hpp>
+#include <roboclaw_ros/utils/parameter.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <std_msgs/msg/empty.hpp>
-
 #include <roboclaw_interfaces/msg/motor_feedback.hpp>
-
 #include <roboclaw_interfaces/msg/velocity_setpoint.hpp>
 
 #include <roboclaw/roboclaw.hpp>
 
+
 using roboclaw::utils::ControllerMap;
+using roboclaw::utils::declare_and_get_parameter;
 using roboclaw::RoboClaw;
 using roboclaw::ReturnCode;
 
@@ -33,12 +33,13 @@ private:
   // TODO make service to close driver
 
   // CLASS MEMBERS --------------------------------------------------------------------------------
-  rclcpp::TimerBase::SharedPtr timer_pub_feedback;
+  rclcpp::TimerBase::SharedPtr timer_pub_feedback_;
   const ControllerMap controller_map_ {*this};
 
-  std::string device_;
+  std::string device_ = "";
   RoboClaw driver_;
-  int baudrate_;
+  int baudrate_ = 0;
+  double velocity_deadband_ = 0.0;
 
   std::unordered_map<std::string, pub_motor_feedback_map_t> pub_feedback_;
   std::unordered_map<std::string, sub_motor_velocity_map_t> sub_velocity_;
@@ -71,6 +72,13 @@ public:
     }
 
     baudrate_ = get_parameter("baudrate").as_int();
+
+    velocity_deadband_ = std::abs(declare_and_get_parameter<double>(
+      *this,
+      "velocity.deadband",
+      "If velocity set point magnitude is less than this value then the duty cylce is set to 0",
+      1.0e-3
+    ));
 
     RCLCPP_INFO_STREAM(get_logger(), controller_map_);
 
@@ -112,7 +120,7 @@ public:
     }
 
     // TIMER --------------------------------------------------------------------------------
-    timer_pub_feedback = create_wall_timer(
+    timer_pub_feedback_ = create_wall_timer(
         static_cast<std::chrono::microseconds>(static_cast<int>(100)),
         std::bind(&RoboClawControllerNode::pub_feedback_timer_callback, this)
       );
@@ -173,12 +181,17 @@ private:
       auto target_motor = target_controller_info.motors.find(motor);
       if (target_motor != target_controller_info.motors.end())
       {
-        auto ret = driver_.set_velocity(*target_controller_info.config, target_motor->second, velocity.set_velocity);
-        // check that the velocity was set
-        if (ret != ReturnCode::OK)
-        {
-          //TODO change cerr to RCLCPP_ERROR_STREAM("");
-          std::cerr << "Could not set velocity point for this controller and motor with error: " << static_cast<int>(ret) << std::endl;
+        if(std::abs(velocity.set_velocity) < velocity_deadband_){
+          stop_motor(*target_controller_info.config, target_motor->second);
+        }
+        else{
+          auto ret = driver_.set_velocity(*target_controller_info.config, target_motor->second, velocity.set_velocity);
+          // check that the velocity was set
+          if (ret != ReturnCode::OK)
+          {
+            //TODO change cerr to RCLCPP_ERROR_STREAM("");
+            std::cerr << "Could not set velocity point for this controller and motor with error: " << static_cast<int>(ret) << std::endl;
+          }
         }
       }
       else

@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <stdexcept>
+// #include <time.hpp>
 
 #include <roboclaw_ros/utils/controller_map.hpp>
 #include <roboclaw_ros/utils/parameter.hpp>
@@ -35,7 +36,7 @@ private:
     rclcpp::Subscription<roboclaw_interfaces::msg::VelocitySetpoint>::SharedPtr sub_velocity = nullptr;
 
     // TODO add last message received time and other necessary data
-
+    rclcpp::Time last_message {0};
   };
 
   // TODO make service to open driver
@@ -43,6 +44,7 @@ private:
 
   // CLASS MEMBERS --------------------------------------------------------------------------------
   rclcpp::TimerBase::SharedPtr timer_pub_feedback_;
+  rclcpp::TimerBase::SharedPtr timer_check_messages_;
 
   /// @brief Controller info map
   const ControllerMap controller_map_ {*this};
@@ -54,6 +56,7 @@ private:
   RoboClaw driver_;
   int baudrate_ = 0;
   double velocity_deadband_ = 0.0;
+  double motor_timeout_ = 60;
 
 public:
 
@@ -90,6 +93,13 @@ public:
       1.0e-3
     ));
 
+    motor_timeout_ = std::abs(declare_and_get_parameter<double>(
+      *this,
+      "motor.timeout",
+      "If the controller hasn;t received a new command for a motor for this many seconds then turn it off",
+      2
+    ));
+
     RCLCPP_INFO_STREAM(get_logger(), controller_map_);
 
     // TOPICS --------------------------------------------------------------------------------
@@ -110,6 +120,9 @@ public:
         auto& this_motor_data = motor_data_[controller_name][motor_name];
 
         const auto topic_namespace = controller_name + "/" + motor_name + "/";
+
+        // initialize the controller time to the current time
+        motor_data_[controller_name][motor_name].last_message = this->get_clock()->now();
 
         // Create a velocity setpoint callback using a lambda function which calls
         // a class method (passing in the name of the controller/motor as well)
@@ -136,6 +149,11 @@ public:
     timer_pub_feedback_ = create_wall_timer(
         static_cast<std::chrono::microseconds>(static_cast<int>(100)),
         std::bind(&RoboClawControllerNode::pub_feedback_timer_callback, this)
+      );
+
+    timer_check_messages_ = create_wall_timer(
+        static_cast<std::chrono::microseconds>(static_cast<int>(100)),
+        std::bind(&RoboClawControllerNode::get_last_message_time_callback, this)
       );
 
     // Open driver
@@ -205,6 +223,8 @@ private:
             //TODO change cerr to RCLCPP_ERROR_STREAM("");
             std::cerr << "Could not set velocity point for this controller and motor with error: " << static_cast<int>(ret) << std::endl;
           }
+          // reset the message timer for this motor
+          motor_data_[controller][motor].last_message = this->get_clock()->now();
         }
       }
       else
@@ -248,6 +268,22 @@ private:
 
         // publish motor feedback with the current position and velocity
         motor_data_[controller_name][motor_name].pub_feedback->publish(motor_feedback);
+      }
+    }
+  }
+
+  void get_last_message_time_callback(){
+    std::cout << "hellor " << std::endl;
+    for (const auto& controller : controller_map_)
+    {
+      const auto& controller_info = controller.second;
+      for (const auto& motor : controller_info.motors)
+      {
+        rclcpp::Time last_time = motor_data_[controller.first][motor.first].last_message;
+        rclcpp::Time current_time = this->get_clock()->now();
+        if ((current_time.seconds() - last_time.seconds()) > motor_timeout_){
+          stop_motor(*controller_info.config, motor.second);
+        }
       }
     }
   }

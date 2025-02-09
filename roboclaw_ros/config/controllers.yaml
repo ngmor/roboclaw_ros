@@ -1,0 +1,26 @@
+/**:
+  ros__parameters:
+    device: /dev/ttyACM0
+    baudrate: 115200
+    controllers:
+      drive:
+        address: 0x80
+        M1:
+          name: right
+          enc_counts_per_rev: 6400
+        M2:
+          name: left
+          enc_counts_per_rev: 6400
+      arms:
+        address: 0x81
+        M1:
+          name: right
+          enc_counts_per_rev: 9600
+        M2:
+          name: left
+          enc_counts_per_rev: 9600
+      head:
+        address: 0x82
+        M2:
+          name: tilt
+          enc_counts_per_rev: 3200

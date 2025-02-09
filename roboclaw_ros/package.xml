@@ -3,7 +3,7 @@
 <package format="3">
   <name>roboclaw_ros</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>ROS interface for RoboClaw motor controller</description>
   <maintainer email="ngmorales97@gmail.com">Nick Morales</maintainer>
   <maintainer email="liz.mtzgr.00@gmail.com">Liz Metzger</maintainer>
   <license>MPL 2.0</license>

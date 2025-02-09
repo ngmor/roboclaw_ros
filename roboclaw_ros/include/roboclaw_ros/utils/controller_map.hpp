@@ -1,3 +1,6 @@
+/// @file
+/// @brief Utilities for reading controller configuration from ROS parameter files
+
 # pragma once
 
 #include <string>

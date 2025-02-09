@@ -1,3 +1,6 @@
+/// @file
+/// @brief Utilities for reading controller configuration from ROS parameter files
+
 #include <roboclaw_ros/utils/controller_map.hpp>
 
 namespace roboclaw

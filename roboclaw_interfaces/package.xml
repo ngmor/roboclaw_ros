@@ -3,7 +3,7 @@
 <package format="3">
   <name>roboclaw_interfaces</name>
   <version>0.0.0</version>
-  <description>Custom messages and services for the ROS/roboclaw interface</description>
+  <description>Custom messages and services for the ROS/RoboClaw interface</description>
   <maintainer email="ngmorales97@gmail.com">Nick Morales</maintainer>
   <maintainer email="liz.mtzgr.00@gmail.com">Liz Metzger</maintainer>
   <license>MPL 2.0</license>

@@ -1,2 +1,4 @@
 float64 velocity
+bool valid_velocity
 float64 position
+bool valid_positon

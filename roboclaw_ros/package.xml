@@ -14,7 +14,7 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend>roboclaw</depend>
-  <depend>std_msgs</depend> <!-- TODO remove -->
+  <depend>std_srvs</depend>
   <depend>roboclaw_interfaces</depend>
   
   <export>

@@ -14,5 +14,5 @@ float64 position
 # If true, position read was valid
 bool valid_positon
 
-# The time that this message was defined by the RoboClaw
+# Timestamp for motor feedback data
 builtin_interfaces/Time stamp

@@ -390,6 +390,7 @@ private:
           roboclaw_interfaces::msg::MotorFeedback motor_feedback;
           motor_feedback.valid_positon = false;
           motor_feedback.valid_velocity = false;
+          motor_feedback.stamp = get_clock()->now();
           motor_data_[controller_name][motor_name].pub_feedback->publish(motor_feedback);
         }
       }
@@ -433,7 +434,7 @@ private:
 
         motor_feedback.position = positions[to_index(motor_channel)];
         motor_feedback.valid_positon = ret_pos == ReturnCode::OK;
-
+        motor_feedback.stamp = get_clock()->now();
         // publish motor feedback with the current position and velocity
         motor_data_[controller_name][motor_name].pub_feedback->publish(motor_feedback);
       }

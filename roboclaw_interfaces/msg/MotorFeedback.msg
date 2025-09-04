@@ -13,3 +13,6 @@ float64 position
 
 # If true, position read was valid
 bool valid_positon
+
+# Timestamp for motor feedback data
+builtin_interfaces/Time stamp

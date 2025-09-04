@@ -1,15 +1,15 @@
 /**:
   ros__parameters:
-    device: /dev/ttyACM0
-    baudrate: 115200
-    controllers:
-      drive:
-        address: 0x80
-        M1:
-          name: right
-          enc_counts_per_rev: 6400
-        M2:
-          name: left
+    device: /dev/ttyACM0              # Serial device to use to communicate with RoboClaw(s)
+    baudrate: 115200                  # Baudrate of serial comms, must match configured RoboClaw baudrate
+    controllers:                      # Each subentry here will be the name of a controller on this serial bus
+      drive:                          # Example of controller config for controller named "drive"
+        address: 0x80                 # Address of this controller
+        M1:                           # Configuration for motor 1
+          name: right                 # Name of motor
+          enc_counts_per_rev: 6400    # Gear ratio of motor (to whatever shaft matters, typically output shaft)
+        M2:                           # Configuration for motor 2
+          name: left                  # ...
           enc_counts_per_rev: 6400
       arms:
         address: 0x81
@@ -19,8 +19,8 @@
         M2:
           name: left
           enc_counts_per_rev: 9600
-      head:
-        address: 0x82
+      head:                           # As shown here, unused channels can be omitted and will not
+        address: 0x82                 # be accessible by the node interfaces
         M2:
           name: tilt
           enc_counts_per_rev: 3200
